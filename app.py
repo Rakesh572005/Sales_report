@@ -1,37 +1,17 @@
 import streamlit as st
 import pandas as pd
+from snowflake.snowpark.context import get_active_session
 from layout import render_layout
 
-from snowflake.snowpark.context import get_active_session
+render_layout()
 
 session = get_active_session()
-df = session.sql(q).to_pandas()
-
-
-render_layout()
-st.caption(
-    "💡 Use the buttons in the header to navigate to detailed analysis pages."
-)
-
-
-def format_number(n):
-    if n >= 1_000_000:
-        return f"{n/1_000_000:.1f}M"
-    if n >= 1_000:
-        return f"{n/1_000:.1f}K"
-    return str(n)
-
-
 
 year = st.session_state.year
 month = st.session_state.month
 day = st.session_state.day
 
-st.caption(
-    f"📌 Showing data for → "
-    f"Year: {year}, Month: {month}, Day: {day}"
-)
-
+st.caption(f"📌 Showing data for → Year: {year}, Month: {month}, Day: {day}")
 
 def apply_filters(q):
     if year != "All":
@@ -42,7 +22,7 @@ def apply_filters(q):
         q += f" AND day = {day}"
     return q
 
-# -------- KPI SECTION --------
+# -------- KPIs --------
 q = """
 SELECT
     COUNT(DISTINCT order_id) AS orders,
@@ -53,34 +33,19 @@ WHERE 1=1
 """
 q = apply_filters(q)
 
-kpi = pd.read_sql(q, conn)
+kpi = session.sql(q).to_pandas()
 
-orders = int(kpi.iloc[0]["ORDERS"])     
+orders = int(kpi.iloc[0]["ORDERS"])
 revenue = float(kpi.iloc[0]["REVENUE"])
 quantity = int(kpi.iloc[0]["QUANTITY"])
 
 c1, c2, c3 = st.columns(3)
 
-c1.metric(
-    "Total Orders",
-    f"{orders:,}",
-    delta="↑ vs previous period"
-)
+c1.metric("Total Orders", f"{orders:,}", delta="↑ vs prev")
+c2.metric("Total Revenue", f"₹{revenue:,.0f}", delta="↑ vs prev")
+c3.metric("Total Quantity", f"{quantity:,}", delta="↑ vs prev")
 
-c2.metric(
-    "Total Revenue",
-    f"₹{revenue:,.0f}",
-    delta="↑ vs previous period"
-)
-
-c3.metric(
-    "Total Quantity",
-    f"{quantity:,}",
-    delta="↑ vs previous period"
-)
-
-
-# -------- TIME TREND --------
+# -------- MONTHLY TREND --------
 st.subheader("📈 Monthly Revenue Trend")
 
 q = """
@@ -91,6 +56,7 @@ WHERE 1=1
 q = apply_filters(q)
 q += " GROUP BY month ORDER BY month"
 
+df = session.sql(q).to_pandas()
 st.line_chart(df.set_index("MONTH"))
 
 # -------- CUSTOMER SUMMARY --------
@@ -104,10 +70,11 @@ WHERE 1=1
 q = apply_filters(q)
 q += " GROUP BY customer_type"
 
+df = session.sql(q).to_pandas()
 st.bar_chart(df.set_index("CUSTOMER_TYPE"))
 
-# -------- PRODUCT SUMMARY --------
-st.subheader("📦 Revenue by Product")
+# -------- TOP 5 PRODUCTS --------
+st.subheader("📦 Top 5 Products by Revenue")
 
 q = """
 SELECT product_id, SUM(total_amount) AS revenue
@@ -115,6 +82,7 @@ FROM SALES_FACT
 WHERE 1=1
 """
 q = apply_filters(q)
-q += " GROUP BY product_id ORDER BY revenue DESC"
+q += " GROUP BY product_id ORDER BY revenue DESC LIMIT 5"
 
+df = session.sql(q).to_pandas()
 st.bar_chart(df.set_index("PRODUCT_ID"))

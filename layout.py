@@ -7,6 +7,7 @@ def render_layout():
         layout="wide"
     )
 
+    # -------- TITLE --------
     st.title("📊 Sales Analytics Dashboard")
 
     # -------- HEADER NAVIGATION --------
@@ -26,7 +27,7 @@ def render_layout():
 
     st.divider()
 
-    # -------- GLOBAL FILTER STATE --------
+    # -------- SESSION STATE INIT --------
     if "year" not in st.session_state:
         st.session_state.year = "All"
     if "month" not in st.session_state:

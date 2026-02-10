@@ -1,14 +1,11 @@
 import streamlit as st
 import pandas as pd
+from snowflake.snowpark.context import get_active_session
 from layout import render_layout
 
-from snowflake.snowpark.context import get_active_session
+render_layout()
 
 session = get_active_session()
-df = session.sql(q).to_pandas()
-
-
-render_layout()
 
 st.subheader("🏠 Executive View")
 
@@ -26,6 +23,7 @@ if st.session_state.year != "All":
 
 q += " GROUP BY year ORDER BY year"
 
+df = session.sql(q).to_pandas()
 
 st.dataframe(df, use_container_width=True)
 st.line_chart(df.set_index("YEAR")[["REVENUE"]])

@@ -1,13 +1,11 @@
 import streamlit as st
 import pandas as pd
-from layout import render_layout
 from snowflake.snowpark.context import get_active_session
-
-session = get_active_session()
-df = session.sql(q).to_pandas()
+from layout import render_layout
 
 render_layout()
 
+session = get_active_session()
 
 st.subheader("📅 Time Analysis")
 
@@ -27,6 +25,7 @@ if st.session_state.month != "All":
 
 q += " GROUP BY order_date ORDER BY order_date"
 
+df = session.sql(q).to_pandas()
 
 st.line_chart(df.set_index("ORDER_DATE")[["REVENUE"]])
 st.dataframe(df, use_container_width=True)
