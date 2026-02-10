@@ -1,10 +1,12 @@
 import streamlit as st
 import pandas as pd
-from db import get_connection
 from layout import render_layout
+from snowflake.snowpark.context import get_active_session
+
+session = get_active_session()
+df = session.sql(q).to_pandas()
 
 render_layout()
-conn = get_connection()
 
 st.subheader("📦 Product Analysis")
 
@@ -22,7 +24,6 @@ if st.session_state.year != "All":
 
 q += " GROUP BY product_id ORDER BY revenue DESC"
 
-df = pd.read_sql(q, conn)
 
 st.bar_chart(df.set_index("PRODUCT_ID")[["REVENUE"]])
 st.dataframe(df, use_container_width=True)

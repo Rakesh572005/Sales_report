@@ -1,14 +1,18 @@
 import streamlit as st
 import pandas as pd
-from db import get_connection
 from layout import render_layout
+
+from snowflake.snowpark.context import get_active_session
+
+session = get_active_session()
+df = session.sql(q).to_pandas()
+
 
 render_layout()
 st.caption(
     "💡 Use the buttons in the header to navigate to detailed analysis pages."
 )
 
-conn = get_connection()
 
 def format_number(n):
     if n >= 1_000_000:
@@ -87,7 +91,6 @@ WHERE 1=1
 q = apply_filters(q)
 q += " GROUP BY month ORDER BY month"
 
-df = pd.read_sql(q, conn)
 st.line_chart(df.set_index("MONTH"))
 
 # -------- CUSTOMER SUMMARY --------
@@ -101,7 +104,6 @@ WHERE 1=1
 q = apply_filters(q)
 q += " GROUP BY customer_type"
 
-df = pd.read_sql(q, conn)
 st.bar_chart(df.set_index("CUSTOMER_TYPE"))
 
 # -------- PRODUCT SUMMARY --------
@@ -115,5 +117,4 @@ WHERE 1=1
 q = apply_filters(q)
 q += " GROUP BY product_id ORDER BY revenue DESC"
 
-df = pd.read_sql(q, conn)
 st.bar_chart(df.set_index("PRODUCT_ID"))
